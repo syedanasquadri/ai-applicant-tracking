@@ -1,12 +1,41 @@
 import { useState, type FormEvent } from "react"
+import { useNavigate } from "react-router";
 import { FileUploader } from "~/components/FileUploader";
 import Navbar from "~/components/Navbar"
+import { usePuterStore } from "~/lib/puter";
 
 const Upload = () => {
+    const {auth, ai, isLoading, fs, kv} = usePuterStore();
+    const navigate = useNavigate();
     const [isProcessing, setIsProcessing] = useState(false);
     const [statusText, setStatusText] = useState('');
-    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    const [file, setFile] = useState<File | null>(null);
 
+    const handleAnalyze = async ({companyName, jobTitle, jobDescription, file} : {companyName : string, jobTitle : string, jobDescription : string, file : File}) =>  {
+        setIsProcessing(true);
+        setStatusText('Uploading the file...');
+        const uploadedFile = await fs.upload([file])
+    }
+
+    const handleFileSelect = (file: File | null) => {
+        setFile(file)
+    }
+
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const form = e.currentTarget.closest('form');
+        if(!form) return;
+        const formData = new FormData(form);
+        const companyName = formData.get('company-name') as string;
+        const jobTitle = formData.get('job-title') as string;
+        const jobDescription = formData.get('job-description') as string;
+        console.log({
+            companyName,jobTitle,jobDescription,file
+        });
+
+        if(!file) return;
+
+        handleAnalyze({companyName, jobTitle, jobDescription, file});
     }
   return (
     <main className="bg-[url('/images/bg-main.svg')] bg-cover">
@@ -38,7 +67,7 @@ const Upload = () => {
                     </div>
                     <div className="form-div">
                         <label htmlFor="uploader">Upload Resume</label>
-                        <FileUploader/>
+                        <FileUploader onFileSelect={handleFileSelect}/>
                     </div>
                     <button className="primary-button" type="submit">Analyze Resume</button>
                 </form>
